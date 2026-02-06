@@ -54,7 +54,7 @@ export default function Home() {
         x={-1}
         y={-1}
         className={cn(
-          "[mask-image:linear-gradient(to_bottom_right,white,transparent,transparent)] ",
+          "mask-[linear-gradient(to_bottom_right,white,transparent,transparent)] ",
         )}
       />
       <div className="absolute top-6 right-6 z-10">

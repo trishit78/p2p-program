@@ -1,4 +1,4 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer,WebSocket } from "ws";
 import http from "http";
 import type { Room } from "../types/room.js";
 import { broadcast } from "../utils/broadCast.js";
@@ -35,9 +35,10 @@ export function setupWebSocket(server: http.Server) {
         currentUserName = userName;
         if(!rooms[roomId]){
           console.log(`🆕 Room "${roomId}" created`);
-          rooms[roomId] = {clients:new Set(),code:""}
+          rooms[roomId] = {clients:new Set(),code:"",users:new Map()}
         }
         rooms[roomId].clients.add(ws);
+        rooms[roomId].users.set(ws,userName);
         console.log(
           `👥 Room "${roomId}" clients count:`,
           rooms[roomId].clients.size
@@ -49,10 +50,16 @@ export function setupWebSocket(server: http.Server) {
           })
         );
         console.log(`📤 Sent CODE_UPDATE to "${userName}"`);
+        ws.send(
+          JSON.stringify({
+            type: "USER_LIST",
+            users: Array.from(rooms[roomId].users.values()),
+          })
+        );
         broadcast(
           roomId,{
             type:"USER_JOINED",
-            userName,
+            userName:currentUserName,
           },
           rooms,
           ws
@@ -91,6 +98,15 @@ export function setupWebSocket(server: http.Server) {
 function leaveRoom(ws:WebSocket,roomId:string,userName:string| null){
   if(!rooms[roomId]) return;
   rooms[roomId].clients.delete(ws);
+  rooms[roomId].users.delete(ws);
+  broadcast(
+    roomId,
+    {
+      type: "USER_LIST",
+      users: Array.from(rooms[roomId].users.values()),
+    },
+    rooms
+  );
 
   broadcast(
     roomId,

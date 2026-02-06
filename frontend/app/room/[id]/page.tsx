@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, Clock, Copy, Play, RotateCcw, Settings, User, Users, XCircle } from "lucide-react";
 import { use, useEffect, useRef, useState } from "react";
 import Editor from '@monaco-editor/react';
+import { ModeToggle } from "@/components/theme-switcher";
+import { toast } from "sonner";
 export default function RoomIdPage({
   params,
 }: {
@@ -21,16 +23,17 @@ export default function RoomIdPage({
   const [users, setUsers] = useState<string[]>([]);
   const [code, setCode] = useState("// Start coding...");
   const isUpdatingFromServer = useRef(false);
+//const [question,setQuestion] = useState(null);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
     ws.onopen = () => {
-      console.log("WebSocket connected");
+      console.log("WebSocket connected 1");
     };
     ws.onmessage = (event) => {
       //console.log("Message from server:", event.data);
       const data = JSON.parse(event.data);
-
+        console.log('data',data)
       switch (data.type) {
         case "USER_LIST":
           setUsers(data.users);
@@ -41,6 +44,15 @@ export default function RoomIdPage({
             setCode(data.code);
           }
           break;
+        // case "QUESTION_UPDATE":
+        //     setQuestion(data.question);
+        //     break;
+        case "USER_JOINED":
+            console.log(users);
+            setUsers((prevUsers)=> [...prevUsers,data.userName]);
+            toast.success(`${data.userName} joined`)
+            console.log('users',users)
+
         default:
           break;
       }
@@ -106,6 +118,10 @@ export default function RoomIdPage({
 
 }
 
+function setNewQuestion(){
+
+}
+
 if(!joined){
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -151,6 +167,7 @@ return (
               <Users className="w-3 h-3" />
               {users.length} online
             </Badge>
+            <ModeToggle/>
           </div>
 
           <div className="flex items-center gap-2">
@@ -187,6 +204,9 @@ return (
                   <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                     Easy
                   </Badge>
+                  <Button size={'sm'} onClick={setNewQuestion}>
+                        Set New Question
+                  </Button>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">

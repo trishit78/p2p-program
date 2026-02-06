@@ -31,7 +31,7 @@ export function setupWebSocket(server: http.Server) {
         currentUserName = userName;
         if(!rooms[roomId]){
           console.log(`🆕 Room "${roomId}" created`);
-          rooms[roomId] = {clients:new Set(),code:"",users:new Map()}
+          rooms[roomId] = {clients:new Set(),code:"",question:null,users:new Map()}
         }
         rooms[roomId].clients.add(ws);
         rooms[roomId].users.set(ws,userName);
@@ -60,6 +60,18 @@ export function setupWebSocket(server: http.Server) {
           rooms,
           ws
         )
+        if(rooms[roomId].question){
+          ws.send(
+            JSON.stringify({
+              type:"QUESTION_UPDATE",
+              question:rooms[roomId].question
+            })
+          )
+        }
+
+
+
+
       } else if(parsedData.type =="CODE_CHANGE"){
         const {codeChange} = parsedData;
         if(currentRoomId && rooms[currentRoomId]){
@@ -78,7 +90,22 @@ export function setupWebSocket(server: http.Server) {
       } else if(parsedData.type === "LEAVE_ROOM" && currentRoomId){
         leaveRoom(ws,currentRoomId,currentUserName);
         currentRoomId=null;
+      } else if(parsedData.type === "SET_QUESTION"){
+        const {question} = parsedData;
+        if(currentRoomId && rooms[currentRoomId]){
+          rooms[currentRoomId]!.question = question;
+          broadcast(
+            currentRoomId,
+            {
+              type:"QUESTION_UPDATE",
+              question,
+              userName:currentUserName
+            },
+            rooms
+          )
+        }
       }
+    });
       ws.on("close",()=>{
         if(currentRoomId){
           leaveRoom(ws,currentRoomId,currentUserName);
@@ -88,8 +115,8 @@ export function setupWebSocket(server: http.Server) {
     });
 
   //  ws.send("something");
-  });
-}
+  }
+
 
 function leaveRoom(ws:WebSocket,roomId:string,userName:string| null){
   if(!rooms[roomId]) return;

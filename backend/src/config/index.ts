@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 
 type ServerConfig = {
     PORT: number,
+    GEMINI_KEY:string
     
 }
 
@@ -15,5 +16,5 @@ loadEnv();
 
 export const serverConfig: ServerConfig = {
     PORT: Number(process.env.PORT) || 3001,
-   
+    GEMINI_KEY:process.env.GEMINI_KEY!
 };

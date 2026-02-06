@@ -3,11 +3,7 @@ import http from "http";
 import type { Room } from "../types/room.js";
 import { broadcast } from "../utils/broadCast.js";
 
-
-
 const rooms:Room = {};
-
-
 
 export function setupWebSocket(server: http.Server) {
   console.log("New WebSocket connection established");

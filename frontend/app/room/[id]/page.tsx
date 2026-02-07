@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, Clock, Copy, Play, RotateCcw, Settings, User, Users, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Copy, Loader2, Play, RotateCcw, Settings, User, Users } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import Editor from '@monaco-editor/react';
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
 import LiveKitComponent from "@/components/Livekit";
+import { Question } from "@/lib/types";
+import { getDifficultyColor } from "@/lib/utils";
 export default function RoomIdPage({
   params,
 }: {
@@ -25,7 +27,8 @@ export default function RoomIdPage({
   const [code, setCode] = useState("// Start coding...");
   //const isUpdatingFromServer = useRef(false);
   const [token, setToken] = useState<string | null>(null);
-//const [question,setQuestion] = useState(null);
+  const [question,setQuestion] = useState<Question| null>(null);
+  const [loadingQuestion,setLoadingQuestion] = useState(false);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
@@ -46,9 +49,9 @@ export default function RoomIdPage({
             setCode(data.code);
           }
           break;
-        // case "QUESTION_UPDATE":
-        //     setQuestion(data.question);
-        //     break;
+        case "QUESTION_UPDATE":
+            setQuestion(data.question);
+            break;
         case "USER_JOINED":
             console.log(users);
             setUsers((prevUsers)=> [...prevUsers,data.userName]);
@@ -63,12 +66,12 @@ export default function RoomIdPage({
       console.log(" WebSocket closed");
     };
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(ws);
 
     return () => {
       ws.close();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleJoin =async () => {
@@ -127,8 +130,34 @@ export default function RoomIdPage({
 
 }
 
-function setNewQuestion(){
+async function setNewQuestion(){
+  setLoadingQuestion(true);
+  try {
+    const res = await fetch("http://localhost:8000/api/chat/question");
+    const response = await res.json();
 
+    if (response.success) {
+      const newQuestion = response.data;
+      setQuestion(newQuestion);
+
+      socket?.send(
+        JSON.stringify({
+          type: "QUESTION_CHANGE",
+          roomId: id,
+          question: newQuestion,
+        })
+      );
+
+      toast.success("New question generated!");
+    } else {
+      toast.error("Failed to generate question");
+    }
+  } catch (error) {
+    console.error("Error fetching question:", error);
+    toast.error("Failed to fetch question");
+  } finally {
+    setLoadingQuestion(false);
+  }
 }
 
 if(!joined){
@@ -225,17 +254,29 @@ return (
           <div className="h-full flex flex-col">
             <div className="border-b border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">1. Two Sum</h2>
+                <h2 className="text-xl font-bold">
+                  {question? question.title: "No Question Loaded"}
+                </h2>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                    Easy
-                  </Badge>
-                  <Button size={'sm'} onClick={setNewQuestion}>
-                        Set New Question
+                 
+                  {question && (
+                    <Badge className={getDifficultyColor(question.difficulty)}>
+                      {question.difficulty}
+                    </Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={setNewQuestion}
+                    disabled={loadingQuestion}
+                  >
+                    {loadingQuestion ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {loadingQuestion ? "Loading..." : "Set New Question"}
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+              {/* <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   Accepted: 4.2M
@@ -244,11 +285,19 @@ return (
                   <XCircle className="w-4 h-4 text-red-500" />
                   Submissions: 8.1M
                 </div>
-              </div>
+              </div> */}
+               {question && (
+                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    Question loaded
+                  </div>
+                </div>
+              )}
             </div>
 
             <ScrollArea className="flex-1 p-6">
-              <div className="space-y-6">
+              {/* <div className="space-y-6">
                 <div>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     Given an array of integers{" "}
@@ -326,7 +375,71 @@ return (
                     </li>
                   </ul>
                 </div>
-              </div>
+              </div> */}
+
+{question ? (
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {question.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3">Example 1:</h3>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm">
+                      <div>
+                        <strong>Input:</strong> {question.exampleInputFirst}
+                      </div>
+                      <div>
+                        <strong>Output:</strong> {question.exampleOutputFirst}
+                      </div>
+                    </div>
+                  </div>
+
+                  {question.exampleInputSecond &&
+                    question.exampleOutputSecond && (
+                      <div>
+                        <h3 className="font-semibold mb-3">Example 2:</h3>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm">
+                          <div>
+                            <strong>Input:</strong>{" "}
+                            {question.exampleInputSecond}
+                          </div>
+                          <div>
+                            <strong>Output:</strong>{" "}
+                            {question.exampleOutputSecond}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  <div>
+                    <h3 className="font-semibold mb-3">Constraints:</h3>
+                    <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                      {question.constraints.map((constraint, index) => (
+                        <li key={index}>
+                          <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
+                            {constraint}
+                          </code>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    No question loaded yet
+                  </p>
+                  <Button onClick={setNewQuestion} disabled={loadingQuestion}>
+                    {loadingQuestion ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {loadingQuestion ? "Loading..." : "Load First Question"}
+                  </Button>
+                </div>
+              )}
             </ScrollArea>
           </div>
         </div>

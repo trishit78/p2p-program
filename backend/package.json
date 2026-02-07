@@ -18,6 +18,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.2.1",
+    "@y/websocket-server": "^0.1.1",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
@@ -26,7 +27,8 @@
     "livekit-server-sdk": "^2.15.0",
     "openai": "^6.18.0",
     "typescript": "^5.9.3",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "y-websocket": "^3.0.0"
   },
   "devDependencies": {
     "@types/ws": "^8.18.1"

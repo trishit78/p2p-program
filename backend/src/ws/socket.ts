@@ -4,14 +4,26 @@ import type { Room } from "../types/room.js";
 import { broadcast } from "../utils/broadCast.js";
 //import { rooms } from "../utils/state.js";
 
+import { setupWSConnection } from "@y/websocket-server/utils";
+import url from "url";
+
+
 const rooms:Room = {};
+
 console.log("📦 socket.ts loaded");
 
 export function setupWebSocket(server: http.Server) {
   const wss = new WebSocketServer({server});
 
   console.log("🧩 WebSocketServer initialized");
-  wss.on("connection", function connection(ws) {
+  wss.on("connection", function connection(ws,request) {
+    const parsedUrl = url.parse(request.url || '', true);
+    const roomId = parsedUrl.pathname?.slice(1) || '';
+        if (roomId.startsWith('yjs-')) {
+      console.log('🟢 Yjs connection detected for room:', roomId);
+      setupWSConnection(ws, request, { docName: roomId });
+      return;
+    }
     console.log("🟢 New WebSocket connection established");
     let currentRoomId :string | null = null;
     let currentUserName:string |null = null;

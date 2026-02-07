@@ -1,78 +1,167 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Editor } from "@monaco-editor/react";
+import { use, useEffect, useMemo, useState } from "react";
+import {
+  Users,
+  Play,
+  RotateCcw,
+  Settings,
+  Copy,
+  CheckCircle,
+  Clock,
+  User,
+  Loader2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, Clock, Copy, Loader2, Play, RotateCcw, Settings, User, Users } from "lucide-react";
-import { use, useEffect, useState } from "react";
-import Editor from '@monaco-editor/react';
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
 import LiveKitComponent from "@/components/Livekit";
+import { getDifficultyColor, getInitials } from "@/lib/utils";
 import { Question, SubmissionResult } from "@/lib/types";
-import { getDifficultyColor } from "@/lib/utils";
-import SubmissionModal from "@/components/SubmissionModal";
 import useSound from "use-sound";
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
+import { MonacoBinding } from "y-monaco";
+import SubmissionModal from "@/components/SubmissionModal";
+
+
+
+
+
 export default function RoomIdPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [userName, setUserName] = useState("");
   const [joined, setJoined] = useState(false);
   const [users, setUsers] = useState<string[]>([]);
-  const [code, setCode] = useState("// Start coding...");
-  //const isUpdatingFromServer = useRef(false);
+  // const [code, setCode] = useState("// Start coding...");
   const [token, setToken] = useState<string | null>(null);
-  const [question,setQuestion] = useState<Question| null>(null);
-  const [loadingQuestion,setLoadingQuestion] = useState(false);
-  const [submissionResult,setSubmissionResult] = useState<SubmissionResult| null>(null);
-  const [openFeedback,setOpenFeedback] = useState<boolean>(false);
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [loadingQuestion, setLoadingQuestion] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [openFeedback, setOpenFeedback] = useState<boolean>(false);
   const [playSound] = useSound("/join.mp3");
+  const ydoc = useMemo(() => new Y.Doc(), []);
+  const [editor, setEditor] = useState<any>(null);
+  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+  const [binding, setBinding] = useState<MonacoBinding | null>(null);
+  const [isYjsConnected, setIsYjsConnected] = useState(false);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000");
+    if (!id) return;
+    const yjsProvider = new WebsocketProvider(
+      "ws://localhost:8000",
+      `yjs-${id}`,
+      ydoc,
+      {
+        connect: true,
+      }
+    );
+    yjsProvider.on("status", (event: any) => {
+      console.log("Yjs status:", event.status);
+      setIsYjsConnected(event.status === "connected");
+    });
+
+    yjsProvider.on("connection-close", () => {
+      console.log("Yjs connection closed");
+      setIsYjsConnected(false);
+    });
+
+    yjsProvider.on("sync", (isSynced: boolean) => {
+      console.log("Yjs synced:", isSynced);
+    });
+
+    setProvider(yjsProvider);
+
+    return () => {
+      yjsProvider?.destroy();
+    };
+  }, [id, ydoc]);
+  useEffect(() => {
+    if (!provider || !editor || !ydoc) {
+      return;
+    }
+
+    console.log("Setting up Monaco binding...");
+
+    const ytext = ydoc.getText("monaco");
+    const model = editor.getModel();
+
+    if (!model) {
+      console.error("Monaco model not available");
+      return;
+    }
+
+    const monacoBinding = new MonacoBinding(
+      ytext,
+      model,
+      new Set([editor]),
+      provider.awareness
+    );
+
+    setBinding(monacoBinding);
+
+    if (ytext.length === 0) {
+      ytext.insert(0, "// Start coding...");
+    }
+
+    return () => {
+      monacoBinding?.destroy();
+    };
+  }, [ydoc, provider, editor]);
+  useEffect(() => {
+    return () => {
+      binding?.destroy();
+      provider?.destroy();
+      ydoc?.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8000/${id}`);
     ws.onopen = () => {
-      console.log("WebSocket connected 1");
+      console.log("WebSocket connected");
+     // console.log(api.ws);
     };
     ws.onmessage = (event) => {
-      //console.log("Message from server:", event.data);
       const data = JSON.parse(event.data);
-        console.log('data',data)
+
       switch (data.type) {
         case "USER_LIST":
           setUsers(data.users);
           break;
-        case "CODE_UPDATE":
-          if (data.code !== code) {
-          //  isUpdatingFromServer.current = true;
-            setCode(data.code);
-          }
+        // case "CODE_UPDATE":
+        //   if (data.code !== code) {
+        //     setCode(data.code);
+        //   }
+        //   break;
+        case "USER_JOINED":
+          setUsers((prevUsers) => [...prevUsers, data.userName]);
+          toast.success(`${data.userName} joined`);
+          playSound();
           break;
         case "QUESTION_UPDATE":
-            setQuestion(data.question);
-            break;
-        case "USER_JOINED":
-            console.log(users);
-            setUsers((prevUsers)=> [...prevUsers,data.userName]);
-            toast.success(`${data.userName} joined`)
-            playSound()
-            console.log('users',users)
-            break;
+          setQuestion(data.question);
+          break;
         case "SOLUTION_REVIEW":
-              setSubmissionResult(data.solution);
-              setOpenFeedback(true);
-              break;
+          setSubmissionResult(data.solution);
+          setOpenFeedback(true);
+          break;
         default:
           break;
       }
     };
-        ws.onclose = () => {
+    ws.onclose = () => {
       console.log(" WebSocket closed");
     };
 
@@ -81,180 +170,155 @@ export default function RoomIdPage({
     return () => {
       ws.close();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  const handleJoin =async () => {
+  const handleJoin = async () => {
     if (socket && userName.trim()) {
-      socket.send(JSON.stringify({
-        type: "JOIN_ROOM",
-        roomId: id,
-        userName
-      }));
-    }
-      // setJoined(true);
-      const res = await fetch(
-        `http://localhost:8000/livekit/getToken?roomName=${id}&userName=${userName.trim()}`
+      socket.send(
+        JSON.stringify({
+          type: "JOIN_ROOM",
+          roomId: id,
+          userName,
+        })
       );
-      const data = await res.json();
-      console.log(data);
-      setToken(data.token);
-      setJoined(true);
-      playSound()
+    }
+    const res = await fetch(
+      `http://localhost:8000/livekit/getToken?roomName=${id}&userName=${userName.trim()}`
+    );
+    const data = await res.json();
+    setToken(data.token);
+    setJoined(true);
+    playSound();
   };
 
-  const handleCodeChange = (value:string | undefined)=>{
-    if(!value) return ;
+  // const handleCodeChange = (value: string | undefined) => {
+  //   if (!value) return;
 
-    setCode(value);
-    // if(isUpdatingFromServer.current){
-    //     isUpdatingFromServer.current = false
-    //     return;
-    // }
+  //   setCode(value);
 
-    socket?.send(
-        JSON.stringify({
-            type:"CODE_CHANGE",
-            roomId:id,
-            codeChange:value,
-        })
-    )
-  }
+  //   socket?.send(
+  //     JSON.stringify({
+  //       type: "CODE_CHANGE",
+  //       roomId: id,
+  //       codeChange: value,
+  //     })
+  //   );
+  // };
 
-  const getInitials = (name:string)=>{
-    return name.split(" ").map((n)=>n[0]).join("").toUpperCase().slice(0,2)
-  }
+  // function clearCode() {
+  //   setCode("");
 
-  function clearCode(){
-    setCode("");
-    // if(isUpdatingFromServer.current){
-    //     isUpdatingFromServer.current = false
-    //     return;
-    // }   
-    socket?.send(
-    JSON.stringify({
-        type:"CODE_CHANGE",
-        roomId:id,
-        codeChange:""
-    })
-)
+  //   socket?.send(
+  //     JSON.stringify({
+  //       type: "CODE_CHANGE",
+  //       roomId: id,
+  //       codeChange: "",
+  //     })
+  //   );
+  // }
+  async function setNewQuestion() {
+    setLoadingQuestion(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/question`);
+      const response = await res.json();
 
-}
+      if (response.success) {
+        const newQuestion = response.data;
+        setQuestion(newQuestion);
 
-async function setNewQuestion(){
-  setLoadingQuestion(true);
-  try {
-    const res = await fetch("http://localhost:8000/api/chat/question");
-    const response = await res.json();
+        socket?.send(
+          JSON.stringify({
+            type: "QUESTION_CHANGE",
+            roomId: id,
+            question: newQuestion,
+          })
+        );
 
-    if (response.success) {
-      const newQuestion = response.data;
-      setQuestion(newQuestion);
-
-      socket?.send(
-        JSON.stringify({
-          type: "QUESTION_CHANGE",
-          roomId: id,
-          question: newQuestion,
-        })
-      );
-
-      toast.success("New question generated!");
-    } else {
-      toast.error("Failed to generate question");
+        toast.success("New question generated!");
+      } else {
+        toast.error("Failed to generate question");
+      }
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      toast.error("Failed to fetch question");
+    } finally {
+      setLoadingQuestion(false);
     }
-  } catch (error) {
-    console.error("Error fetching question:", error);
-    toast.error("Failed to fetch question");
-  } finally {
-    setLoadingQuestion(false);
   }
-}
-
-async function handleSubmit() {
- // alert('submit')
-  if (!question) {
-    toast.error("No question loaded to submit!");
-    return;
-  }
-//console.log('question',question);
-//console.log('code',code)
-  try {
-    toast.loading("Submitting solution for review...", { id: "submit" });
-
-    const res = await fetch("http://localhost:8000/api/chat/answer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question,
-        solution: code,
-      }),
-    });
-
-     const data = await res.json();
-
-    if (data.success) {
-      toast.success("Solution reviewed!", { id: "submit" });
-
-      console.log("Tutor feedback:", data.data);
-      setSubmissionResult(data.data);
-
-      // alert(`Tutor says:\n\n${data.data.analysis}\n\nImprovements:\n${data.data.improvements}`);
-      setOpenFeedback(true);
-      socket?.send(
-        JSON.stringify({
-          type:"SOLUTION_REVIEW",
-          solution:data.data,
-          roomId:id,
-        })
-      )
-    } else {
-      toast.error("Failed to review solution", { id: "submit" });
+  async function handleSubmit() {
+    if (!question) {
+      toast.error("No question loaded to submit!");
+      return;
     }
-  } catch (error) {
-    console.error("Error submitting solution:", error);
-    toast.error("Error while submitting", { id: "submit" });
+
+    try {
+      toast.loading("Submitting solution for review...", { id: "submit" });
+      const currentCode = ydoc.getText("monaco").toString();
+      const res = await fetch(`http://localhost:8000/api/chat/answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: question.description,
+          solution: currentCode,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Solution reviewed!", { id: "submit" });
+
+        setSubmissionResult(data.data);
+        setOpenFeedback(true);
+        socket?.send(
+          JSON.stringify({
+            type: "SOLUTION_REVIEW",
+            solution: data.data,
+            roomId: id,
+          })
+        );
+      } else {
+        toast.error("Failed to review solution", { id: "submit" });
+      }
+    } catch (error) {
+      console.error("Error submitting solution:", error);
+      toast.error("Error while submitting", { id: "submit" });
+    }
   }
-}
 
-
-
-if(!joined){
+  if (!joined) {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold">Join Room</CardTitle>
-              <p className="text-sm text-muted-foreground">Room: {id}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Username</label>
-                <Input
-                  type="text"
-                  placeholder="Enter your username"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleJoin()}
-                />
-              </div>
-              <Button
-                onClick={handleJoin}
-                className="w-full"
-                disabled={!userName.trim()}
-              >
-                <User className="w-4 h-4 mr-2" />
-                Join Room
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    
-}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Join Room</CardTitle>
+            <p className="text-sm text-muted-foreground">Room: {id}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Username</label>
+              <Input
+                type="text"
+                placeholder="Enter your username"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleJoin()}
+              />
+            </div>
+            <Button
+              onClick={handleJoin}
+              className="w-full"
+              disabled={!userName.trim()}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Join Room
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-
-return (
+  return (
     <div className="h-screen bg-white dark:bg-gray-900 flex flex-col">
       <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 py-3">
         <div className="flex items-center justify-between">
@@ -264,7 +328,7 @@ return (
               <Users className="w-3 h-3" />
               {users.length} online
             </Badge>
-            <ModeToggle/>
+            <ModeToggle />
           </div>
 
           <div className="flex items-center gap-2">
@@ -291,22 +355,20 @@ return (
         </div>
       </div>
 
-      
-{token && (
-  <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-4">
-    <div className="h-full">
-      <LiveKitComponent token={token} height="100%" />
-    </div>
-  </div>
-)}
-{!token && (
-  <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-    <div className="text-center text-gray-500 dark:text-gray-400">
-      Connecting to video...
-    </div>
-  </div>
-)}
-
+      {token && (
+        <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-4">
+          <div className="h-full">
+            <LiveKitComponent token={token} height="100%" />
+          </div>
+        </div>
+      )}
+      {!token && (
+        <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            Connecting to video...
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex">
         <div className="w-1/2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
@@ -314,10 +376,9 @@ return (
             <div className="border-b border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
-                  {question? question.title: "No Question Loaded"}
+                  {question ? question.title : "No Question Loaded"}
                 </h2>
                 <div className="flex items-center gap-2">
-                 
                   {question && (
                     <Badge className={getDifficultyColor(question.difficulty)}>
                       {question.difficulty}
@@ -335,17 +396,7 @@ return (
                   </Button>
                 </div>
               </div>
-              {/* <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Accepted: 4.2M
-                </div>
-                <div className="flex items-center gap-1">
-                  <XCircle className="w-4 h-4 text-red-500" />
-                  Submissions: 8.1M
-                </div>
-              </div> */}
-               {question && (
+              {question && (
                 <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -356,87 +407,7 @@ return (
             </div>
 
             <ScrollArea className="flex-1 p-6">
-              {/* <div className="space-y-6">
-                <div>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    Given an array of integers{" "}
-                    <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
-                      nums
-                    </code>{" "}
-                    and an integer{" "}
-                    <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
-                      target
-                    </code>
-                    , return{" "}
-                    <em>
-                      indices of the two numbers such that they add up to target
-                    </em>
-                    .
-                  </p>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-                    You may assume that each input would have{" "}
-                    <strong>exactly one solution</strong>, and you may not use
-                    the same element twice.
-                  </p>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-                    You can return the answer in any order.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">Example 1:</h3>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm">
-                    <div>
-                      <strong>Input:</strong> nums = [2,7,11,15], target = 9
-                    </div>
-                    <div>
-                      <strong>Output:</strong> [0,1]
-                    </div>
-                    <div>
-                      <strong>Explanation:</strong> Because nums[0] + nums[1] ==
-                      9, we return [0, 1].
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">Example 2:</h3>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm">
-                    <div>
-                      <strong>Input:</strong> nums = [3,2,4], target = 6
-                    </div>
-                    <div>
-                      <strong>Output:</strong> [1,2]
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">Constraints:</h3>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                    <li>
-                      <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
-                        2 ≤ nums.length ≤ 10⁴
-                      </code>
-                    </li>
-                    <li>
-                      <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
-                        -10⁹ ≤ nums[i] ≤ 10⁹
-                      </code>
-                    </li>
-                    <li>
-                      <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">
-                        -10⁹ ≤ target ≤ 10⁹
-                      </code>
-                    </li>
-                    <li>
-                      <strong>Only one valid answer exists.</strong>
-                    </li>
-                  </ul>
-                </div>
-              </div> */}
-
-{question ? (
+              {question ? (
                 <div className="space-y-6">
                   <div>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -515,7 +486,7 @@ return (
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={clearCode}>
+                <Button variant="outline" size="sm">
                   <RotateCcw className="w-4 h-4 mr-1" />
                   Reset
                 </Button>
@@ -530,8 +501,11 @@ return (
             <Editor
               height="100%"
               defaultLanguage="javascript"
-              value={code}
-              onChange={handleCodeChange}
+              // value={code}
+              // onChange={handleCodeChange}
+              onMount={(editor) => {
+                setEditor(editor);
+              }}
               theme="vs-dark"
               options={{
                 minimap: { enabled: false },
@@ -561,13 +535,19 @@ return (
                   <Play className="w-4 h-4 mr-1" />
                   Run Code
                 </Button>
-                <Button size="sm" onClick={handleSubmit} >Submit</Button>
+                <Button size="sm" onClick={handleSubmit}>
+                  Submit
+                </Button>
               </div>
             </div>
           </div>
           <div>
-              <SubmissionModal feedbackData = {submissionResult} openFeedback={openFeedback} setOpenFeedback={setOpenFeedback} />
-            </div>
+            <SubmissionModal
+              feedbackData={submissionResult}
+              openFeedback={openFeedback}
+              setOpenFeedback={setOpenFeedback}
+            />
+          </div>
         </div>
       </div>
     </div>

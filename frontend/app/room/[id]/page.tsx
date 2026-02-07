@@ -14,6 +14,7 @@ import LiveKitComponent from "@/components/Livekit";
 import { Question, SubmissionResult } from "@/lib/types";
 import { getDifficultyColor } from "@/lib/utils";
 import SubmissionModal from "@/components/SubmissionModal";
+import useSound from "use-sound";
 export default function RoomIdPage({
   params,
 }: {
@@ -32,7 +33,7 @@ export default function RoomIdPage({
   const [loadingQuestion,setLoadingQuestion] = useState(false);
   const [submissionResult,setSubmissionResult] = useState<SubmissionResult| null>(null);
   const [openFeedback,setOpenFeedback] = useState<boolean>(false);
-
+  const [playSound] = useSound("/join.mp3");
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
@@ -60,6 +61,7 @@ export default function RoomIdPage({
             console.log(users);
             setUsers((prevUsers)=> [...prevUsers,data.userName]);
             toast.success(`${data.userName} joined`)
+            playSound()
             console.log('users',users)
             break;
         case "SOLUTION_REVIEW":
@@ -98,6 +100,7 @@ export default function RoomIdPage({
       console.log(data);
       setToken(data.token);
       setJoined(true);
+      playSound()
   };
 
   const handleCodeChange = (value:string | undefined)=>{

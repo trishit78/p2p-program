@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import LiveKitComponent from "@/components/Livekit";
 import { Question, SubmissionResult } from "@/lib/types";
 import { getDifficultyColor } from "@/lib/utils";
+import SubmissionModal from "@/components/SubmissionModal";
 export default function RoomIdPage({
   params,
 }: {
@@ -30,6 +31,8 @@ export default function RoomIdPage({
   const [question,setQuestion] = useState<Question| null>(null);
   const [loadingQuestion,setLoadingQuestion] = useState(false);
   const [submissionResult,setSubmissionResult] = useState<SubmissionResult| null>(null);
+  const [openFeedback,setOpenFeedback] = useState<boolean>(false);
+
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
@@ -59,6 +62,10 @@ export default function RoomIdPage({
             toast.success(`${data.userName} joined`)
             console.log('users',users)
             break;
+        case "SOLUTION_REVIEW":
+              setSubmissionResult(data.solution);
+              setOpenFeedback(true);
+              break;
         default:
           break;
       }
@@ -189,7 +196,15 @@ async function handleSubmit() {
       console.log("Tutor feedback:", data.data);
       setSubmissionResult(data.data);
 
-      alert(`Tutor says:\n\n${data.data.analysis}\n\nImprovements:\n${data.data.improvements}`);
+      // alert(`Tutor says:\n\n${data.data.analysis}\n\nImprovements:\n${data.data.improvements}`);
+      setOpenFeedback(true);
+      socket?.send(
+        JSON.stringify({
+          type:"SOLUTION_REVIEW",
+          solution:data.data,
+          roomId:id,
+        })
+      )
     } else {
       toast.error("Failed to review solution", { id: "submit" });
     }
@@ -547,6 +562,9 @@ return (
               </div>
             </div>
           </div>
+          <div>
+              <SubmissionModal feedbackData = {submissionResult} openFeedback={openFeedback} setOpenFeedback={setOpenFeedback} />
+            </div>
         </div>
       </div>
     </div>

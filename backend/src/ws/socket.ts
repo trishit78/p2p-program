@@ -110,6 +110,18 @@ export function setupWebSocket(server: http.Server) {
             rooms
           )
         }
+      } else if (parsedData.type == "SOLUTION_REVIEW"){
+        const { solution } = parsedData;
+        if(currentRoomId && rooms[currentRoomId]){
+          broadcast(
+            currentRoomId,
+            {
+              type:"SOLUTION_REVIEW",
+              solution,
+            },
+            rooms
+          )
+        }
       }
     });
       ws.on("close",()=>{

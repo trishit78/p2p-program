@@ -2,13 +2,17 @@ import { WebSocketServer,WebSocket } from "ws";
 import http from "http";
 import type { Room } from "../types/room.js";
 import { broadcast } from "../utils/broadCast.js";
+//import { rooms } from "../utils/state.js";
 
 const rooms:Room = {};
+console.log("📦 socket.ts loaded");
 
 export function setupWebSocket(server: http.Server) {
-  console.log("New WebSocket connection established");
   const wss = new WebSocketServer({server});
+
+  console.log("🧩 WebSocketServer initialized");
   wss.on("connection", function connection(ws) {
+    console.log("🟢 New WebSocket connection established");
     let currentRoomId :string | null = null;
     let currentUserName:string |null = null;
     
@@ -25,11 +29,16 @@ export function setupWebSocket(server: http.Server) {
         console.log(error)
       }
       if(parsedData.type=="JOIN_ROOM"){
+        // if (currentRoomId) {
+        //   console.log("⚠️ Duplicate JOIN ignored");
+        //   return;
+        // }
         const {userName,roomId} = parsedData;
         console.log(`👤 User "${userName}" is joining room "${roomId}"`);
         currentRoomId = roomId;
         currentUserName = userName;
         if(!rooms[roomId]){
+          console.log("🧠 Current rooms object:", Object.keys(rooms));
           console.log(`🆕 Room "${roomId}" created`);
           rooms[roomId] = {clients:new Set(),code:"",question:null,users:new Map()}
         }
@@ -68,9 +77,6 @@ export function setupWebSocket(server: http.Server) {
             })
           )
         }
-
-
-
 
       } else if(parsedData.type =="CODE_CHANGE"){
         const {codeChange} = parsedData;

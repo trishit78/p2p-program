@@ -52,7 +52,7 @@ export default function RoomIdPage({
             setUsers((prevUsers)=> [...prevUsers,data.userName]);
             toast.success(`${data.userName} joined`)
             console.log('users',users)
-
+            break;
         default:
           break;
       }
@@ -67,7 +67,7 @@ export default function RoomIdPage({
     return () => {
       ws.close();
     };
-  }, [id,code]);
+  }, [id]);
 
   const handleJoin = () => {
     if (socket && userName.trim()) {

@@ -10,6 +10,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Editor from '@monaco-editor/react';
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
+import LiveKitComponent from "@/components/Livekit";
 export default function RoomIdPage({
   params,
 }: {
@@ -23,6 +24,7 @@ export default function RoomIdPage({
   const [users, setUsers] = useState<string[]>([]);
   const [code, setCode] = useState("// Start coding...");
   const isUpdatingFromServer = useRef(false);
+  const [token, setToken] = useState<string | null>(null);
 //const [question,setQuestion] = useState(null);
 
   useEffect(() => {
@@ -69,15 +71,22 @@ export default function RoomIdPage({
     };
   }, [id]);
 
-  const handleJoin = () => {
+  const handleJoin =async () => {
     if (socket && userName.trim()) {
       socket.send(JSON.stringify({
         type: "JOIN_ROOM",
         roomId: id,
         userName
       }));
-      setJoined(true);
     }
+      // setJoined(true);
+      const res = await fetch(
+        `http://localhost:8000/livekit/getToken?roomName=${id}&userName=${userName.trim()}`
+      );
+      const data = await res.json();
+      console.log(data);
+      setToken(data.token);
+      setJoined(true);
   };
 
   const handleCodeChange = (value:string | undefined)=>{
@@ -193,6 +202,23 @@ return (
           </div>
         </div>
       </div>
+
+      
+{token && (
+  <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-4">
+    <div className="h-full">
+      <LiveKitComponent token={token} height="100%" />
+    </div>
+  </div>
+)}
+{!token && (
+  <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+    <div className="text-center text-gray-500 dark:text-gray-400">
+      Connecting to video...
+    </div>
+  </div>
+)}
+
 
       <div className="flex-1 flex">
         <div className="w-1/2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">

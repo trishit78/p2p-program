@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, Clock, Copy, Play, RotateCcw, Settings, User, Users, XCircle } from "lucide-react";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Editor from '@monaco-editor/react';
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ export default function RoomIdPage({
   const [joined, setJoined] = useState(false);
   const [users, setUsers] = useState<string[]>([]);
   const [code, setCode] = useState("// Start coding...");
-  const isUpdatingFromServer = useRef(false);
+  //const isUpdatingFromServer = useRef(false);
   const [token, setToken] = useState<string | null>(null);
 //const [question,setQuestion] = useState(null);
 
@@ -42,7 +42,7 @@ export default function RoomIdPage({
           break;
         case "CODE_UPDATE":
           if (data.code !== code) {
-            isUpdatingFromServer.current = true;
+          //  isUpdatingFromServer.current = true;
             setCode(data.code);
           }
           break;
@@ -93,10 +93,10 @@ export default function RoomIdPage({
     if(!value) return ;
 
     setCode(value);
-    if(isUpdatingFromServer.current){
-        isUpdatingFromServer.current = false
-        return;
-    }
+    // if(isUpdatingFromServer.current){
+    //     isUpdatingFromServer.current = false
+    //     return;
+    // }
 
     socket?.send(
         JSON.stringify({
@@ -113,10 +113,10 @@ export default function RoomIdPage({
 
   function clearCode(){
     setCode("");
-    if(isUpdatingFromServer.current){
-        isUpdatingFromServer.current = false
-        return;
-    }   
+    // if(isUpdatingFromServer.current){
+    //     isUpdatingFromServer.current = false
+    //     return;
+    // }   
     socket?.send(
     JSON.stringify({
         type:"CODE_CHANGE",

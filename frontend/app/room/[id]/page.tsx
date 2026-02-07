@@ -11,7 +11,7 @@ import Editor from '@monaco-editor/react';
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
 import LiveKitComponent from "@/components/Livekit";
-import { Question } from "@/lib/types";
+import { Question, SubmissionResult } from "@/lib/types";
 import { getDifficultyColor } from "@/lib/utils";
 export default function RoomIdPage({
   params,
@@ -29,6 +29,7 @@ export default function RoomIdPage({
   const [token, setToken] = useState<string | null>(null);
   const [question,setQuestion] = useState<Question| null>(null);
   const [loadingQuestion,setLoadingQuestion] = useState(false);
+  const [submissionResult,setSubmissionResult] = useState<SubmissionResult| null>(null);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
@@ -159,6 +160,46 @@ async function setNewQuestion(){
     setLoadingQuestion(false);
   }
 }
+
+async function handleSubmit() {
+ // alert('submit')
+  if (!question) {
+    toast.error("No question loaded to submit!");
+    return;
+  }
+//console.log('question',question);
+//console.log('code',code)
+  try {
+    toast.loading("Submitting solution for review...", { id: "submit" });
+
+    const res = await fetch("http://localhost:8000/api/chat/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        solution: code,
+      }),
+    });
+
+     const data = await res.json();
+
+    if (data.success) {
+      toast.success("Solution reviewed!", { id: "submit" });
+
+      console.log("Tutor feedback:", data.data);
+      setSubmissionResult(data.data);
+
+      alert(`Tutor says:\n\n${data.data.analysis}\n\nImprovements:\n${data.data.improvements}`);
+    } else {
+      toast.error("Failed to review solution", { id: "submit" });
+    }
+  } catch (error) {
+    console.error("Error submitting solution:", error);
+    toast.error("Error while submitting", { id: "submit" });
+  }
+}
+
+
 
 if(!joined){
     return (
@@ -502,7 +543,7 @@ return (
                   <Play className="w-4 h-4 mr-1" />
                   Run Code
                 </Button>
-                <Button size="sm">Submit</Button>
+                <Button size="sm" onClick={handleSubmit} >Submit</Button>
               </div>
             </div>
           </div>

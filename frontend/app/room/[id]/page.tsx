@@ -26,6 +26,7 @@ import { AuthLayout } from "@/components/AuthLayout";
 import { useRoomSocket } from "../hooks/useRoomSocket";
 import { useYjsEditor } from "../hooks/useYjsEditor";
 import { getQuestion, submitSolution, getLivekitToken, runCode, RunCodeResponse, submitCode, SubmitCodeResponse } from "@/lib/api";
+import { CodeOutputModal } from "@/components/CodeOutputModal";
 
 // Dynamic imports for heavy client-only components
 const Editor = dynamic(
@@ -67,6 +68,14 @@ export default function RoomIdPage({
   const [token, setToken] = useState<string | null>(null);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
   const [playSound] = useSound("/join.mp3");
+  const [codeOutputResult, setCodeOutputResult] = useState<{
+    status: string;
+    output?: string;
+    compileError?: string;
+    runtimeError?: string;
+  } | null>(null);
+  const [codeOutputOpen, setCodeOutputOpen] = useState(false);
+  const [codeOutputTitle, setCodeOutputTitle] = useState("Code Output");
 
   // Custom hooks for WebSocket and Yjs logic
   const {
@@ -191,25 +200,17 @@ export default function RoomIdPage({
       });
 
       toast.dismiss("runcode");
-      
-      const isAccepted = result.status === "Accepted";
-      const icon = isAccepted ? "✅" : "❌";
-      
-      let message = `${icon} Status: ${result.status}`;
-      if (result.output) {
-        message += `\n\nOutput:\n${result.output}`;
-      }
-      if (result.compileError) {
-        message += `\n\nCompile Error:\n${result.compileError}`;
-      }
-      if (result.runtimeError) {
-        message += `\n\nRuntime Error:\n${result.runtimeError}`;
-      }
-      
-      alert(message);
+      setCodeOutputResult(result);
+      setCodeOutputTitle("Run Code Output");
+      setCodeOutputOpen(true);
     } catch (error) {
       toast.dismiss("runcode");
-      alert(error instanceof Error ? error.message : "Failed to run code");
+      setCodeOutputResult({
+        status: "Error",
+        runtimeError: error instanceof Error ? error.message : "Failed to run code",
+      });
+      setCodeOutputTitle("Run Code Output");
+      setCodeOutputOpen(true);
     }
   }
 
@@ -235,25 +236,17 @@ export default function RoomIdPage({
       });
 
       toast.dismiss("submitcode");
-      
-      const isAccepted = result.status === "Accepted";
-      const icon = isAccepted ? "✅" : "❌";
-      
-      let message = `${icon} Status: ${result.status}`;
-      if (result.output) {
-        message += `\n\nOutput:\n${result.output}`;
-      }
-      if (result.compileError) {
-        message += `\n\nCompile Error:\n${result.compileError}`;
-      }
-      if (result.runtimeError) {
-        message += `\n\nRuntime Error:\n${result.runtimeError}`;
-      }
-      
-      alert(message);
+      setCodeOutputResult(result);
+      setCodeOutputTitle("Submission Result");
+      setCodeOutputOpen(true);
     } catch (error) {
       toast.dismiss("submitcode");
-      alert(error instanceof Error ? error.message : "Failed to submit code");
+      setCodeOutputResult({
+        status: "Error",
+        runtimeError: error instanceof Error ? error.message : "Failed to submit code",
+      });
+      setCodeOutputTitle("Submission Result");
+      setCodeOutputOpen(true);
     }
   }
 
@@ -574,6 +567,12 @@ export default function RoomIdPage({
               feedbackData={submissionResult}
               openFeedback={openFeedback}
               setOpenFeedback={setOpenFeedback}
+            />
+            <CodeOutputModal
+              open={codeOutputOpen}
+              onOpenChange={setCodeOutputOpen}
+              result={codeOutputResult}
+              title={codeOutputTitle}
             />
           </div>
         </div>

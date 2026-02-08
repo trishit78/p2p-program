@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthLayout } from "@/components/AuthLayout";
+import { signin } from "@/lib/api";
 
 export default function SignIn() {
   const router = useRouter();
@@ -42,25 +43,13 @@ export default function SignIn() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/auth/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      const response = await signin({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Sign in failed");
-      }
-
-      if (data.data.token) {
-        document.cookie = `token=${data.data.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      if (response.data.token) {
+        document.cookie = `token=${response.data.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       }
 
       router.push("/");

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthLayout } from "@/components/AuthLayout";
+import { signup } from "@/lib/api";
 
 export default function SignUp() {
   const router = useRouter();
@@ -45,23 +46,11 @@ export default function SignUp() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+      await signup({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
 
       router.push("/signin");
     } catch (error) {

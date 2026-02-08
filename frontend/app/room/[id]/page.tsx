@@ -26,6 +26,7 @@ import SubmissionModal from "@/components/SubmissionModal";
 import { AuthLayout } from "@/components/AuthLayout";
 import { useRoomSocket } from "../hooks/useRoomSocket";
 import { useYjsEditor } from "../hooks/useYjsEditor";
+import { getQuestion, submitSolution } from "@/lib/api";
 
 // Dynamic imports for heavy client-only components
 const Editor = dynamic(
@@ -107,8 +108,7 @@ export default function RoomIdPage({
   async function setNewQuestion() {
     setLoadingQuestion(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/question`);
-      const response = await res.json();
+      const response = await getQuestion();
 
       if (response.success) {
         const newQuestion = response.data;
@@ -128,7 +128,7 @@ export default function RoomIdPage({
       }
     } catch (error) {
       console.error("Error fetching question:", error);
-      toast.error("Failed to fetch question");
+      toast.error(error instanceof Error ? error.message : "Failed to fetch question");
     } finally {
       setLoadingQuestion(false);
     }
@@ -147,16 +147,10 @@ export default function RoomIdPage({
     try {
       toast.loading("Submitting solution for review...", { id: "submit" });
       const currentCode = ydoc.getText("monaco").toString();
-      const res = await fetch(`http://localhost:8000/api/chat/answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: question.description,
-          solution: currentCode,
-        }),
+      const data = await submitSolution({
+        question: question.description,
+        solution: currentCode,
       });
-
-      const data = await res.json();
 
       if (data.success) {
         toast.success("Solution reviewed!", { id: "submit" });
@@ -174,8 +168,7 @@ export default function RoomIdPage({
         toast.error("Failed to review solution", { id: "submit" });
       }
     } catch (error) {
-      console.error("Error submitting solution:", error);
-      toast.error("Error while submitting", { id: "submit" });
+      toast.error(error instanceof Error ? error.message : "Failed to submit solution", { id: "submit" });
     }
   }
 

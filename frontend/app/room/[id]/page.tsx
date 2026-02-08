@@ -29,8 +29,7 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
 import SubmissionModal from "@/components/SubmissionModal";
-import { GridPattern } from "@/components/ui/grid-pattern";
-import { cn } from "@/lib/utils";
+import { AuthLayout } from "@/components/AuthLayout";
 
 
 
@@ -192,31 +191,6 @@ export default function RoomIdPage({
     playSound();
   };
 
-  // const handleCodeChange = (value: string | undefined) => {
-  //   if (!value) return;
-
-  //   setCode(value);
-
-  //   socket?.send(
-  //     JSON.stringify({
-  //       type: "CODE_CHANGE",
-  //       roomId: id,
-  //       codeChange: value,
-  //     })
-  //   );
-  // };
-
-  // function clearCode() {
-  //   setCode("");
-
-  //   socket?.send(
-  //     JSON.stringify({
-  //       type: "CODE_CHANGE",
-  //       roomId: id,
-  //       codeChange: "",
-  //     })
-  //   );
-  // }
   async function setNewQuestion() {
     setLoadingQuestion(true);
     try {
@@ -289,188 +263,70 @@ export default function RoomIdPage({
 
   if (!joined) {
     return (
-      <main className="min-h-screen bg-white dark:bg-black text-foreground flex flex-col items-center justify-center px-6 py-12 relative">
-        <GridPattern
-          width={20}
-          height={20}
-          x={-1}
-          y={-1}
-          className={cn(
-            "mask-[linear-gradient(to_bottom_right,white,transparent,transparent)] "
-          )}
-        />
-        <div className="absolute top-6 right-6 z-10">
-          <ModeToggle />
-        </div>
-
-        <section className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-10">
-          <div className="space-y-12">
+      <AuthLayout
+        icon={<Users className="w-6 h-6 text-white dark:text-black" />}
+        title="Join"
+        subtitle="Room"
+        description="Enter your username to join the collaborative coding session."
+        badges={[`Room: ${id}`, "Real-time Sync", "Video Chat"]}
+        codePreview={{
+          fileName: `${id}.session`,
+          comment: "Collaborative coding session",
+          variableName: "session",
+          variables: [
+            { name: "room", value: id },
+            { name: "user", value: userName || "awaiting..." },
+            { name: "status", value: userName ? "ready" : "pending", type: "status" },
+          ],
+          functionName: "joinSession",
+          functionLines: [
+            "await connect(room)",
+            "// Start collaborating...",
+          ],
+          statusText: userName ? "Ready to join" : "Enter username above",
+          statusReady: !!userName,
+        }}
+      >
+        <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-2xl font-semibold">
+              Enter Session
+            </CardTitle>
+            <p className="text-base text-gray-600 dark:text-gray-400">
+              Choose a username to identify yourself
+            </p>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white dark:text-black" />
-                </div>
-                <div>
-                  <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-none">
-                    Join
-                    <br />
-                    <span className="text-gray-500">Room</span>
-                  </h1>
-                </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <User className="w-4 h-4" />
+                  Username
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter your username"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleJoin()}
+                  className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
+                />
               </div>
 
-              <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg font-light">
-                Enter your username to join the collaborative coding session.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-8 text-sm text-gray-500 dark:text-gray-400">
-              <div>
-                <div className="border p-1 rounded-lg">Room: {id}</div>
-              </div>
-              <div>
-                <div className="border p-1 rounded-lg">Real-time Sync</div>
-              </div>
-              <div>
-                <div className="border p-1 rounded-lg">Video Chat</div>
-              </div>
-            </div>
-
-            <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-2xl font-semibold">
-                  Enter Session
-                </CardTitle>
-                <p className="text-base text-gray-600 dark:text-gray-400">
-                  Choose a username to identify yourself
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                      <User className="w-4 h-4" />
-                      Username
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Enter your username"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleJoin()}
-                      className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleJoin}
-                    disabled={!userName.trim()}
-                    className="w-full h-11 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-black text-white font-medium transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      Join Room
-                      <Play className="w-4 h-4" />
-                    </div>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="relative hidden lg:block">
-            <div className="relative bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+              <Button
+                onClick={handleJoin}
+                disabled={!userName.trim()}
+                className="w-full h-11 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-black text-white font-medium transition-colors"
+              >
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
-                    {id}.session
-                  </span>
+                  Join Room
+                  <Play className="w-4 h-4" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="p-6 font-mono text-sm space-y-3">
-                <div className="text-gray-500 dark:text-gray-500">
-                  // Collaborative coding session
-                </div>
-                <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
-
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-gray-800 dark:text-gray-200">
-                      const
-                    </span>{" "}
-                    <span className="text-black dark:text-white font-semibold">
-                      session
-                    </span>{" "}
-                    <span className="text-gray-500">=</span>{" "}
-                    <span className="text-gray-500">{"{"}</span>
-                  </div>
-                  <div className="ml-4">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      room:
-                    </span>{" "}
-                    <span className="text-green-600 dark:text-green-400">
-                      &quot;{id}&quot;
-                    </span>
-                    <span className="text-gray-500">,</span>
-                  </div>
-                  <div className="ml-4">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      user:
-                    </span>{" "}
-                    <span className="text-green-600 dark:text-green-400">
-                      &quot;{userName || "awaiting..."}&quot;
-                    </span>
-                    <span className="text-gray-500">,</span>
-                  </div>
-                  <div className="ml-4">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      status:
-                    </span>{" "}
-                    <span className="text-yellow-600 dark:text-yellow-400">
-                      &quot;{userName ? "ready" : "pending"}&quot;
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">{"}"}</span>
-                  </div>
-
-                  <div className="pt-4">
-                    <div className="text-gray-800 dark:text-gray-200">
-                      <span className="text-gray-800 dark:text-gray-200">
-                        function
-                      </span>{" "}
-                      <span className="text-black dark:text-white font-semibold">
-                        joinSession
-                      </span>
-                      <span className="text-gray-500">() {"{"}</span>
-                    </div>
-                    <div className="ml-4 text-gray-600 dark:text-gray-400">
-                      await connect(room)
-                    </div>
-                    <div className="ml-4 text-gray-600 dark:text-gray-400">
-                      // Start collaborating...
-                    </div>
-                    <div className="text-gray-500">{"}"}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {userName ? "Ready to join" : "Enter username above"}
-                  </span>
-                </div>
-              </div>
+              </Button>
             </div>
-          </div>
-        </section>
-      </main>
+          </CardContent>
+        </Card>
+      </AuthLayout>
     );
   }
 

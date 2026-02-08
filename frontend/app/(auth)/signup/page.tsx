@@ -13,10 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, ArrowRight, Terminal, Eye, EyeOff } from "lucide-react";
-import { ModeToggle } from "@/components/theme-switcher";
-import { cn } from "@/lib/utils";
-import { GridPattern } from "@/components/ui/grid-pattern";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { AuthLayout } from "@/components/AuthLayout";
 
 export default function SignUp() {
   const router = useRouter();
@@ -65,7 +63,6 @@ export default function SignUp() {
         throw new Error(data.message || "Signup failed");
       }
 
-      // Redirect to signin after successful signup
       router.push("/signin");
     } catch (error) {
       setErr(error instanceof Error ? error.message : "Signup failed");
@@ -75,268 +72,148 @@ export default function SignUp() {
   }
 
   return (
-    <main className="min-h-screen bg-white dark:bg-black text-foreground flex flex-col items-center justify-center px-6 py-12 relative">
-      <GridPattern
-        width={20}
-        height={20}
-        x={-1}
-        y={-1}
-        className={cn(
-          "mask-[linear-gradient(to_bottom_right,white,transparent,transparent)] "
-        )}
-      />
-      <div className="absolute top-6 right-6 z-10">
-        <ModeToggle />
-      </div>
-
-      <section className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-10">
-        <div className="space-y-12">
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-                <Terminal className="w-6 h-6 text-white dark:text-black" />
-              </div>
-              <div>
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-none">
-                  Join
-                  <br />
-                  <span className="text-gray-500">CodeTogether</span>
-                </h1>
-              </div>
+    <AuthLayout
+      title="Join"
+      subtitle="CodeTogether"
+      description="Create your account and start collaborating with developers around the world."
+      badges={["Free Forever", "Instant Access", "Secure"]}
+      codePreview={{
+        fileName: "welcome.js",
+        comment: "Start your journey",
+        variableName: "developer",
+        variables: [
+          { name: "name", value: formData.name || "your-name" },
+          { name: "email", value: formData.email || "your@email.com" },
+          { name: "ready", value: "true", type: "boolean" },
+        ],
+        functionName: "startCoding",
+        functionLines: [
+          'console.log("Welcome aboard!")',
+          "// Real-time collaboration awaits...",
+        ],
+        statusText: formData.email ? "Ready to create account" : "Fill in your details",
+        statusReady: !!formData.email,
+      }}
+    >
+      <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
+        <CardHeader className="pb-6">
+          <CardTitle className="text-2xl font-semibold">
+            Create Account
+          </CardTitle>
+          <CardDescription className="text-base text-gray-600 dark:text-gray-400">
+            Enter your details to get started
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-3">
+              <Label
+                htmlFor="name"
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <User className="w-4 h-4" />
+                Full Name
+              </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="John Doe"
+                className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
+              />
             </div>
 
-            <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg font-light">
-              Create your account and start collaborating with developers
-              around the world.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-8 text-sm text-gray-500 dark:text-gray-400">
-            <div>
-              <div className="border p-1 rounded-lg">Free Forever</div>
+            <div className="space-y-3">
+              <Label
+                htmlFor="email"
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <Mail className="w-4 h-4" />
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="john@example.com"
+                className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
+              />
             </div>
-            <div>
-              <div className="border p-1 rounded-lg">Instant Access</div>
-            </div>
-            <div>
-              <div className="border p-1 rounded-lg">Secure</div>
-            </div>
-          </div>
 
-          <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-2xl font-semibold">
-                Create Account
-              </CardTitle>
-              <CardDescription className="text-base text-gray-600 dark:text-gray-400">
-                Enter your details to get started
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="name"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
-                    <User className="w-4 h-4" />
-                    Full Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="John Doe"
-                    className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="email"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="john@example.com"
-                    className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="password"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      placeholder="••••••••"
-                      className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {err && (
-                  <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-md">
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      {err}
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-11 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-black text-white font-medium transition-colors"
+            <div className="space-y-3">
+              <Label
+                htmlFor="password"
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <Lock className="w-4 h-4" />
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="••••••••"
+                  className="h-11 border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-current rounded-full animate-spin"></div>
-                      Creating Account...
-                    </div>
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      Create Account
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
+                    <Eye className="w-4 h-4" />
                   )}
-                </Button>
-
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account?{" "}
-                  <Link
-                    href="/signin"
-                    className="text-black dark:text-white font-medium hover:underline"
-                  >
-                    Sign in
-                  </Link>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="relative hidden lg:block">
-          <div className="relative bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
-                  welcome.js
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </button>
               </div>
             </div>
 
-            <div className="p-6 font-mono text-sm space-y-3">
-              <div className="text-gray-500 dark:text-gray-500">
-                // Start your journey
+            {err && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-600 dark:text-red-400">{err}</p>
               </div>
-              <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+            )}
 
-              <div className="space-y-2">
-                <div>
-                  <span className="text-gray-800 dark:text-gray-200">
-                    const
-                  </span>{" "}
-                  <span className="text-black dark:text-white font-semibold">
-                    developer
-                  </span>{" "}
-                  <span className="text-gray-500">=</span>{" "}
-                  <span className="text-gray-500">{"{"}</span>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-11 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-black text-white font-medium transition-colors"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-current rounded-full animate-spin"></div>
+                  Creating Account...
                 </div>
-                <div className="ml-4">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    name:
-                  </span>{" "}
-                  <span className="text-green-600 dark:text-green-400">
-                    &quot;{formData.name || "your-name"}&quot;
-                  </span>
-                  <span className="text-gray-500">,</span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  Create Account
+                  <ArrowRight className="w-4 h-4" />
                 </div>
-                <div className="ml-4">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    email:
-                  </span>{" "}
-                  <span className="text-green-600 dark:text-green-400">
-                    &quot;{formData.email || "your@email.com"}&quot;
-                  </span>
-                  <span className="text-gray-500">,</span>
-                </div>
-                <div className="ml-4">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    ready:
-                  </span>{" "}
-                  <span className="text-blue-600 dark:text-blue-400">true</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">{"}"}</span>
-                </div>
+              )}
+            </Button>
 
-                <div className="pt-4">
-                  <div className="text-gray-800 dark:text-gray-200">
-                    <span className="text-gray-800 dark:text-gray-200">
-                      function
-                    </span>{" "}
-                    <span className="text-black dark:text-white font-semibold">
-                      startCoding
-                    </span>
-                    <span className="text-gray-500">() {"{"}</span>
-                  </div>
-                  <div className="ml-4 text-gray-600 dark:text-gray-400">
-                    console.log(&quot;Welcome aboard!&quot;)
-                  </div>
-                  <div className="ml-4 text-gray-600 dark:text-gray-400">
-                    // Real-time collaboration awaits...
-                  </div>
-                  <div className="text-gray-500">{"}"}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {formData.email ? "Ready to create account" : "Fill in your details"}
-                </span>
-              </div>
+            <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+              Already have an account?{" "}
+              <Link
+                href="/signin"
+                className="text-black dark:text-white font-medium hover:underline"
+              >
+                Sign in
+              </Link>
             </div>
-          </div>
-        </div>
-      </section>
-    </main>
+          </form>
+        </CardContent>
+      </Card>
+    </AuthLayout>
   );
 }

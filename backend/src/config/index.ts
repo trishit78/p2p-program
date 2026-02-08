@@ -8,7 +8,8 @@ type ServerConfig = {
     OPENAI_API_KEY:string ,
     MONGO_URI:string,
     JWT_SECRET:string,
-    JWT_EXPIRY:string  
+    JWT_EXPIRY:string,
+    JUDGE0_API_KEY:string  
 }
 
 function loadEnv() {
@@ -26,5 +27,6 @@ export const serverConfig: ServerConfig = {
     OPENAI_API_KEY:process.env.OPENAI_API_KEY || '',
     MONGO_URI:process.env.MONGO_URI || '',
     JWT_EXPIRY:process.env.JWT_EXPIRY || '7d',
-    JWT_SECRET:process.env.JWT_SECRET ||'trishit'
+    JWT_SECRET:process.env.JWT_SECRET ||'trishit',
+    JUDGE0_API_KEY:process.env.JUDGE0_API_KEY||''
 };

@@ -1,6 +1,7 @@
 import express, {type Request,type Response } from 'express';
 import { AccessToken } from 'livekit-server-sdk';
 import { serverConfig } from '../../config/index.js';
+import { getLivekitTokenValidation } from '../middleware/validation.middleware.js';
 
 const liveKitRouter = express.Router()
 
@@ -21,13 +22,9 @@ const createToken = async (roomName:string,participantName:string) => {
 };
 
 
-liveKitRouter.get('/getToken', async (req:Request, res:Response) => {
+liveKitRouter.get('/getToken', getLivekitTokenValidation, async (req:Request, res:Response) => {
   const { roomName, userName } = req.query;
-  if(!roomName || !userName || typeof roomName != "string" || typeof userName != "string"){
-    res.status(400).json({message:"Username and room name required."});
-    return;
-  }
-  const token = await createToken(roomName,userName);
+  const token = await createToken(roomName as string, userName as string);
   res.status(200).json({token});
 });
 

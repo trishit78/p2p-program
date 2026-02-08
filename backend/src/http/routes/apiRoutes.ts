@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express';
 import {  StatusCodes } from 'http-status-codes';
 import { serverConfig } from '../../config/index.js';
 import OpenAI from "openai";
+import { answerValidation } from '../middleware/validation.middleware.js';
 
 
 const apiRouter = express.Router();
@@ -61,7 +62,7 @@ Do not add explanations. Do not wrap in markdown.
 
 
 
-apiRouter.post("/chat/answer", async (req: Request, res: Response) => {
+apiRouter.post("/chat/answer", answerValidation, async (req: Request, res: Response) => {
     const { question, solution } = req.body;
   
     console.log("question", question);

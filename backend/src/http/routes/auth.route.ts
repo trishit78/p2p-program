@@ -5,7 +5,7 @@ import { signUpValidation, signInValidation, getUserByIdValidation } from '../mi
 
 const authRouter = express.Router();
 
-authRouter.post('/signup', signUpValidation, signUpHandler);
+authRouter.post('/signup', signUpHandler);
 
 authRouter.post('/signin', signInValidation, signInHandler);
 

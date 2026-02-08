@@ -60,7 +60,7 @@ export default function SignIn() {
       }
 
       if (data.data.token) {
-        localStorage.setItem("token", data.data.token);
+        document.cookie = `token=${data.data.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       }
 
       router.push("/");

@@ -60,6 +60,40 @@ interface LivekitTokenResponse {
   token: string;
 }
 
+interface RunCodeData {
+  code: string;
+  language: string;
+  input: string;
+  expectedOutput: string;
+}
+
+export interface RunCodeResponse {
+  status: string;
+  output: string;
+  expected: string;
+  passed: boolean;
+  compileError?: string;
+  runtimeError?: string;
+}
+
+interface TestCase {
+  input: string;
+  output: string;
+}
+
+interface SubmitCodeData {
+  code: string;
+  language: string;
+  input: string;
+}
+
+export interface SubmitCodeResponse {
+  status: string;
+  output: string;
+  compileError?: string;
+  runtimeError?: string;
+}
+
 // Auth API functions
 export async function signin(data: SigninData): Promise<SigninResponse> {
   try {
@@ -103,6 +137,24 @@ export async function getLivekitToken(roomName: string, userName: string): Promi
     const response = await api.get<LivekitTokenResponse>("/livekit/getToken", {
       params: { roomName, userName },
     });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function runCode(data: RunCodeData): Promise<RunCodeResponse> {
+  try {
+    const response = await api.post<RunCodeResponse>("/code/run", data);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function submitCode(data: SubmitCodeData): Promise<SubmitCodeResponse> {
+  try {
+    const response = await api.post<SubmitCodeResponse>("/code/submit", data);
     return response.data;
   } catch (error) {
     handleError(error);

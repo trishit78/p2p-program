@@ -7,7 +7,6 @@ import {
   Play,
   RotateCcw,
   Settings,
-  Copy,
   CheckCircle,
   Clock,
   User,
@@ -26,7 +25,7 @@ import SubmissionModal from "@/components/SubmissionModal";
 import { AuthLayout } from "@/components/AuthLayout";
 import { useRoomSocket } from "../hooks/useRoomSocket";
 import { useYjsEditor } from "../hooks/useYjsEditor";
-import { getQuestion, submitSolution, getLivekitToken } from "@/lib/api";
+import { getQuestion, submitSolution, getLivekitToken, runCode, RunCodeResponse, submitCode, SubmitCodeResponse } from "@/lib/api";
 
 // Dynamic imports for heavy client-only components
 const Editor = dynamic(
@@ -166,6 +165,95 @@ export default function RoomIdPage({
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit solution", { id: "submit" });
+    }
+  }
+
+  async function handleRunCode() {
+    if (!question) {
+      toast.error("No question loaded!");
+      return;
+    }
+    
+    if (!ydoc) {
+      toast.error("Editor not ready yet!");
+      return;
+    }
+
+    try {
+      toast.loading("Running code...", { id: "runcode" });
+      const currentCode = ydoc.getText("monaco").toString();
+      
+      const result: RunCodeResponse = await runCode({
+        code: currentCode,
+        language: "javascript",
+        input: question.exampleInputFirst,
+        expectedOutput: question.exampleOutputFirst,
+      });
+
+      toast.dismiss("runcode");
+      
+      const isAccepted = result.status === "Accepted";
+      const icon = isAccepted ? "✅" : "❌";
+      
+      let message = `${icon} Status: ${result.status}`;
+      if (result.output) {
+        message += `\n\nOutput:\n${result.output}`;
+      }
+      if (result.compileError) {
+        message += `\n\nCompile Error:\n${result.compileError}`;
+      }
+      if (result.runtimeError) {
+        message += `\n\nRuntime Error:\n${result.runtimeError}`;
+      }
+      
+      alert(message);
+    } catch (error) {
+      toast.dismiss("runcode");
+      alert(error instanceof Error ? error.message : "Failed to run code");
+    }
+  }
+
+  async function handleSubmitCode() {
+    if (!question) {
+      toast.error("No question loaded!");
+      return;
+    }
+    
+    if (!ydoc) {
+      toast.error("Editor not ready yet!");
+      return;
+    }
+
+    try {
+      toast.loading("Submitting code...", { id: "submitcode" });
+      const currentCode = ydoc.getText("monaco").toString();
+      
+      const result: SubmitCodeResponse = await submitCode({
+        code: currentCode,
+        language: "javascript",
+        input: question.exampleInputFirst,
+      });
+
+      toast.dismiss("submitcode");
+      
+      const isAccepted = result.status === "Accepted";
+      const icon = isAccepted ? "✅" : "❌";
+      
+      let message = `${icon} Status: ${result.status}`;
+      if (result.output) {
+        message += `\n\nOutput:\n${result.output}`;
+      }
+      if (result.compileError) {
+        message += `\n\nCompile Error:\n${result.compileError}`;
+      }
+      if (result.runtimeError) {
+        message += `\n\nRuntime Error:\n${result.runtimeError}`;
+      }
+      
+      alert(message);
+    } catch (error) {
+      toast.dismiss("submitcode");
+      alert(error instanceof Error ? error.message : "Failed to submit code");
     }
   }
 
@@ -468,16 +556,15 @@ export default function RoomIdPage({
                 Last saved: just now
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Copy className="w-4 h-4 mr-1" />
-                  Copy
-                </Button>
-                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleRunCode}>
                   <Play className="w-4 h-4 mr-1" />
                   Run Code
                 </Button>
-                <Button size="sm" onClick={handleSubmit}>
+                <Button size="sm" variant="outline" onClick={handleSubmitCode}>
                   Submit
+                </Button>
+                <Button size="sm" onClick={handleSubmit}>
+                  AI Review
                 </Button>
               </div>
             </div>

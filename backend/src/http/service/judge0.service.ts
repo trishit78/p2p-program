@@ -18,13 +18,14 @@ export const submitToJudge0 = async (
 
 export const pollResult = async (token: string) => {
   for (let i = 0; i < 10; i++) {
+    console.log("token",token);
     const res = await axios.get(
       `${JUDGE0_URL}/submissions/${token}?base64_encoded=false`,
       { headers: JUDGE0_HEADERS }
     );
-
+    console.log("res",res);
     const statusId = res.data.status.id;
-
+    console.log("statusId",statusId);
     if (statusId >= 3) return res.data;
 
     await new Promise((r) => setTimeout(r, 1000));

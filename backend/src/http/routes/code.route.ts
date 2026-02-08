@@ -5,7 +5,7 @@ import { codeRunHandler, submissionHandler } from '../controller/code.controller
 const codeRouter = express.Router();
 
 
-codeRouter.post('/run',authRequest,codeRunHandler);
-codeRouter.post('/submit',authRequest,submissionHandler);
+codeRouter.post('/run',codeRunHandler);
+codeRouter.post('/submit',submissionHandler);
 
 export default codeRouter;

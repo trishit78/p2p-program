@@ -56,6 +56,10 @@ interface SubmitSolutionResponse {
   data: SubmissionResult;
 }
 
+interface LivekitTokenResponse {
+  token: string;
+}
+
 // Auth API functions
 export async function signin(data: SigninData): Promise<SigninResponse> {
   try {
@@ -88,6 +92,17 @@ export async function getQuestion(): Promise<QuestionResponse> {
 export async function submitSolution(data: SubmitSolutionData): Promise<SubmitSolutionResponse> {
   try {
     const response = await api.post<SubmitSolutionResponse>("/api/chat/answer", data);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function getLivekitToken(roomName: string, userName: string): Promise<LivekitTokenResponse> {
+  try {
+    const response = await api.get<LivekitTokenResponse>("/livekit/getToken", {
+      params: { roomName, userName },
+    });
     return response.data;
   } catch (error) {
     handleError(error);

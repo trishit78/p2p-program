@@ -26,7 +26,7 @@ import SubmissionModal from "@/components/SubmissionModal";
 import { AuthLayout } from "@/components/AuthLayout";
 import { useRoomSocket } from "../hooks/useRoomSocket";
 import { useYjsEditor } from "../hooks/useYjsEditor";
-import { getQuestion, submitSolution } from "@/lib/api";
+import { getQuestion, submitSolution, getLivekitToken } from "@/lib/api";
 
 // Dynamic imports for heavy client-only components
 const Editor = dynamic(
@@ -96,10 +96,7 @@ export default function RoomIdPage({
         })
       );
     }
-    const res = await fetch(
-      `http://localhost:8000/livekit/getToken?roomName=${id}&userName=${userName.trim()}`
-    );
-    const data = await res.json();
+    const data = await getLivekitToken(id, userName.trim());
     setToken(data.token);
     setJoined(true);
     playSound();

@@ -37,6 +37,14 @@ export default function Home() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr("");
+
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/signin");
+      return;
+    }
+
     const v = validate();
     if (v) return setErr(v);
 

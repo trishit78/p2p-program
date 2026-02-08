@@ -62,8 +62,8 @@ export default function SignIn() {
       }
 
       // Store token if returned
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      if (data.data.token) {
+        localStorage.setItem("token", data.data.token);
       }
 
       // Redirect to home after successful signin

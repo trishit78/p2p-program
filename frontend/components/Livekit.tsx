@@ -12,7 +12,7 @@ import { Room, Track } from "livekit-client";
 import "@livekit/components-styles";
 import { useState, useEffect, useMemo } from "react";
 
-const serverUrl = "ws://localhost:8000";
+const serverUrl = "wss://hoe-6pzhxoj0.livekit.cloud";
 
 export default function LiveKitComponent({
   token,
@@ -118,7 +118,7 @@ function MyVideoConference() {
 
           key={track.publication?.trackSid || Math.random()}
           trackRef={track}
-          className="rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-600 w-[200px] h-[150px]"
+          className="rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-600 w-50 h-37.5"
         />
       ))}
     </div>

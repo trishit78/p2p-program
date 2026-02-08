@@ -1,29 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Doc as YDoc } from "yjs";
+import type { WebsocketProvider } from "y-websocket";
+import type { MonacoBinding } from "y-monaco";
+import type * as monaco from "monaco-editor";
+
+// Type for Yjs provider status event
+interface YjsStatusEvent {
+  status: "connected" | "disconnected" | "connecting";
+}
 
 interface UseYjsEditorOptions {
   roomId: string;
 }
 
 interface UseYjsEditorReturn {
-  ydoc: any;
-  provider: any;
-  binding: any;
+  ydoc: YDoc | null;
+  provider: WebsocketProvider | null;
+  binding: MonacoBinding | null;
   isYjsConnected: boolean;
-  editor: any;
-  setEditor: React.Dispatch<React.SetStateAction<any>>;
+  editor: monaco.editor.IStandaloneCodeEditor | null;
+  setEditor: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
 export function useYjsEditor({ roomId }: UseYjsEditorOptions): UseYjsEditorReturn {
-  const [editor, setEditor] = useState<any>(null);
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [isYjsConnected, setIsYjsConnected] = useState(false);
   
   // Use refs to store instances that need to persist across renders
-  const ydocRef = useRef<any>(null);
-  const providerRef = useRef<any>(null);
-  const bindingRef = useRef<any>(null);
+  const ydocRef = useRef<YDoc | null>(null);
+  const providerRef = useRef<WebsocketProvider | null>(null);
+  const bindingRef = useRef<MonacoBinding | null>(null);
   const isInitializedRef = useRef(false);
 
   // Initialize Yjs document and provider
@@ -50,7 +58,7 @@ export function useYjsEditor({ roomId }: UseYjsEditorOptions): UseYjsEditorRetur
         { connect: true }
       );
       
-      wsProvider.on("status", (event: any) => {
+      wsProvider.on("status", (event: YjsStatusEvent) => {
         console.log("Yjs status:", event.status);
         if (isMounted) setIsYjsConnected(event.status === "connected");
       });
@@ -125,7 +133,7 @@ export function useYjsEditor({ roomId }: UseYjsEditorOptions): UseYjsEditorRetur
     return () => {
       isMounted = false;
     };
-  }, [editor, isYjsConnected]); // Re-run when editor changes or connection status changes
+  }, [editor, isYjsConnected]);
 
   // Cleanup on unmount
   useEffect(() => {

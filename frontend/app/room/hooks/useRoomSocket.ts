@@ -2,6 +2,33 @@ import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Question, SubmissionResult } from "@/lib/types";
 
+// Discriminated union types for WebSocket messages
+type UserListMessage = {
+  type: "USER_LIST";
+  users: string[];
+};
+
+type UserJoinedMessage = {
+  type: "USER_JOINED";
+  userName: string;
+};
+
+type QuestionUpdateMessage = {
+  type: "QUESTION_UPDATE";
+  question: Question;
+};
+
+type SolutionReviewMessage = {
+  type: "SOLUTION_REVIEW";
+  solution: SubmissionResult;
+};
+
+type RoomWebSocketMessage =
+  | UserListMessage
+  | UserJoinedMessage
+  | QuestionUpdateMessage
+  | SolutionReviewMessage;
+
 interface UseRoomSocketOptions {
   roomId: string;
   onUserJoined?: () => void;
@@ -35,8 +62,8 @@ export function useRoomSocket({
       console.log("WebSocket connected");
     };
     
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    ws.onmessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data) as RoomWebSocketMessage;
 
       switch (data.type) {
         case "USER_LIST":

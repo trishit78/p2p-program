@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { use, useState, useCallback } from "react";
+import { use, useState, useCallback, Suspense } from "react";
 import {
   Users,
   Play,
@@ -137,6 +136,11 @@ export default function RoomIdPage({
   async function handleSubmit() {
     if (!question) {
       toast.error("No question loaded to submit!");
+      return;
+    }
+    
+    if (!ydoc) {
+      toast.error("Editor not ready yet!");
       return;
     }
 
@@ -283,9 +287,16 @@ export default function RoomIdPage({
 
       {token && (
         <div className="h-[280px] border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-4">
-          <div className="h-full">
-            <LiveKitComponent token={token} height="100%" />
-          </div>
+          <Suspense fallback={
+            <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-400">Loading video...</span>
+            </div>
+          }>
+            <div className="h-full">
+              <LiveKitComponent token={token} height="100%" />
+            </div>
+          </Suspense>
         </div>
       )}
       {!token && (
@@ -298,7 +309,13 @@ export default function RoomIdPage({
 
       <div className="flex-1 flex">
         <div className="w-1/2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <div className="h-full flex flex-col">
+          <Suspense fallback={
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-400">Loading question...</span>
+            </div>
+          }>
+            <div className="h-full flex flex-col">
             <div className="border-b border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
@@ -398,6 +415,7 @@ export default function RoomIdPage({
               )}
             </ScrollArea>
           </div>
+          </Suspense>
         </div>
 
         <div className="w-1/2 flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -424,26 +442,33 @@ export default function RoomIdPage({
           </div>
 
           <div className="flex-1">
-            <Editor
-              height="100%"
-              defaultLanguage="javascript"
-              // value={code}
-              // onChange={handleCodeChange}
-              onMount={(editor) => {
-                setEditor(editor);
-              }}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: "on",
-                roundedSelection: false,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 2,
-                wordWrap: "on",
-              }}
-            />
+            <Suspense fallback={
+              <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-400">Loading editor...</span>
+              </div>
+            }>
+              <Editor
+                height="100%"
+                defaultLanguage="javascript"
+                // value={code}
+                // onChange={handleCodeChange}
+                onMount={(editor) => {
+                  setEditor(editor);
+                }}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: "on",
+                  roundedSelection: false,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: "on",
+                }}
+              />
+            </Suspense>
           </div>
 
           <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">

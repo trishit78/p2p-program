@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { Editor } from "@monaco-editor/react";
 import { use, useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -21,7 +21,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
-import LiveKitComponent from "@/components/Livekit";
 import { getDifficultyColor, getInitials } from "@/lib/utils";
 import { Question, SubmissionResult } from "@/lib/types";
 import useSound from "use-sound";
@@ -30,6 +29,31 @@ import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
 import SubmissionModal from "@/components/SubmissionModal";
 import { AuthLayout } from "@/components/AuthLayout";
+
+// Dynamic imports for heavy client-only components
+const Editor = dynamic(
+  () => import("@monaco-editor/react").then((mod) => mod.Editor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    ),
+  }
+);
+
+const LiveKitComponent = dynamic(
+  () => import("@/components/Livekit"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    ),
+  }
+);
 
 
 

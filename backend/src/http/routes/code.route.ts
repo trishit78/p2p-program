@@ -6,6 +6,6 @@ const codeRouter = express.Router();
 
 
 codeRouter.post('/run',codeRunHandler);
-codeRouter.post('/submit',submissionHandler);
+codeRouter.post('/submit',authRequest,submissionHandler);
 
 export default codeRouter;

@@ -9,6 +9,21 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to attach JWT token from cookies
+api.interceptors.request.use((config) => {
+  if (typeof document !== "undefined") {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 // Helper function to handle errors uniformly
 function handleError(error: unknown): never {
   if (error instanceof AxiosError) {

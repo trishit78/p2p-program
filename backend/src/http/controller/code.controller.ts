@@ -42,6 +42,7 @@ export const codeRunHandler = async(req:Request,res:Response)=>{
 
 export const submissionHandler = async(req:Request,res:Response)=>{
   const { code, language, input } = req.body;
+  const userId = req.user?.id;
 
   if (!code || !language) {
     return res.status(400).json({ error: "Code and language are required" });
@@ -55,6 +56,15 @@ export const submissionHandler = async(req:Request,res:Response)=>{
   );
 
   const result = await pollResult(token);
+
+  // Save submission to database
+  if (userId) {
+    await Submission.create({
+      userId,
+      language: language || "javascript",
+      code,
+    });
+  }
 
   res.json({
     status: result.status.description,

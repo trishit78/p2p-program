@@ -2,7 +2,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useState, useCallback } from "react";
 import {
   Users,
   Play,
@@ -22,13 +22,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ModeToggle } from "@/components/theme-switcher";
 import { toast } from "sonner";
 import { getDifficultyColor, getInitials } from "@/lib/utils";
-import { Question, SubmissionResult } from "@/lib/types";
 import useSound from "use-sound";
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
-import { MonacoBinding } from "y-monaco";
 import SubmissionModal from "@/components/SubmissionModal";
 import { AuthLayout } from "@/components/AuthLayout";
+import { useRoomSocket } from "../hooks/useRoomSocket";
+import { useYjsEditor } from "../hooks/useYjsEditor";
 
 // Dynamic imports for heavy client-only components
 const Editor = dynamic(
@@ -65,137 +63,29 @@ export default function RoomIdPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [userName, setUserName] = useState("");
   const [joined, setJoined] = useState(false);
-  const [users, setUsers] = useState<string[]>([]);
-  // const [code, setCode] = useState("// Start coding...");
   const [token, setToken] = useState<string | null>(null);
-  const [question, setQuestion] = useState<Question | null>(null);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
-  const [openFeedback, setOpenFeedback] = useState<boolean>(false);
   const [playSound] = useSound("/join.mp3");
-  const ydoc = useMemo(() => new Y.Doc(), []);
-  const [editor, setEditor] = useState<any>(null);
-  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
-  const [binding, setBinding] = useState<MonacoBinding | null>(null);
-  const [isYjsConnected, setIsYjsConnected] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    const yjsProvider = new WebsocketProvider(
-      "ws://localhost:8000",
-      `yjs-${id}`,
-      ydoc,
-      {
-        connect: true,
-      }
-    );
-    yjsProvider.on("status", (event: any) => {
-      console.log("Yjs status:", event.status);
-      setIsYjsConnected(event.status === "connected");
-    });
+  // Custom hooks for WebSocket and Yjs logic
+  const {
+    socket,
+    users,
+    question,
+    setQuestion,
+    submissionResult,
+    setSubmissionResult,
+    openFeedback,
+    setOpenFeedback,
+  } = useRoomSocket({
+    roomId: id,
+    onUserJoined: useCallback(() => playSound(), [playSound]),
+  });
 
-    yjsProvider.on("connection-close", () => {
-      console.log("Yjs connection closed");
-      setIsYjsConnected(false);
-    });
+  const { ydoc, isYjsConnected, setEditor } = useYjsEditor({ roomId: id });
 
-    yjsProvider.on("sync", (isSynced: boolean) => {
-      console.log("Yjs synced:", isSynced);
-    });
-
-    setProvider(yjsProvider);
-
-    return () => {
-      yjsProvider?.destroy();
-    };
-  }, [id, ydoc]);
-  useEffect(() => {
-    if (!provider || !editor || !ydoc) {
-      return;
-    }
-
-    console.log("Setting up Monaco binding...");
-
-    const ytext = ydoc.getText("monaco");
-    const model = editor.getModel();
-
-    if (!model) {
-      console.error("Monaco model not available");
-      return;
-    }
-
-    const monacoBinding = new MonacoBinding(
-      ytext,
-      model,
-      new Set([editor]),
-      provider.awareness
-    );
-
-    setBinding(monacoBinding);
-
-    if (ytext.length === 0) {
-      ytext.insert(0, "// Start coding...");
-    }
-
-    return () => {
-      monacoBinding?.destroy();
-    };
-  }, [ydoc, provider, editor]);
-  useEffect(() => {
-    return () => {
-      binding?.destroy();
-      provider?.destroy();
-      ydoc?.destroy();
-    };
-  }, []);
-
-  useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8000/${id}`);
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-     // console.log(api.ws);
-    };
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      switch (data.type) {
-        case "USER_LIST":
-          setUsers(data.users);
-          break;
-        // case "CODE_UPDATE":
-        //   if (data.code !== code) {
-        //     setCode(data.code);
-        //   }
-        //   break;
-        case "USER_JOINED":
-          setUsers((prevUsers) => [...prevUsers, data.userName]);
-          toast.success(`${data.userName} joined`);
-          playSound();
-          break;
-        case "QUESTION_UPDATE":
-          setQuestion(data.question);
-          break;
-        case "SOLUTION_REVIEW":
-          setSubmissionResult(data.solution);
-          setOpenFeedback(true);
-          break;
-        default:
-          break;
-      }
-    };
-    ws.onclose = () => {
-      console.log(" WebSocket closed");
-    };
-
-    setSocket(ws);
-
-    return () => {
-      ws.close();
-    };
-  }, [id]);
   const handleJoin = async () => {
     if (socket && userName.trim()) {
       socket.send(
